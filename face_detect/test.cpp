@@ -1,52 +1,63 @@
+/*
+Geo OpenCV FaceDetect 1.2
+10 Apr 00:10
+*/
 #include <opencv2/opencv.hpp>
-#include <opencv2/objdetect.hpp>  // 包含人脸识别的头文件
-#include <stdio.h>
+#include <opencv2/objdetect.hpp>
+#include <iostream>
 
 using namespace cv;
+using namespace std;
 
-int main()
-{
-    // 加载人脸识别模型，确保 haarcascade_frontalface_default.xml 文件在你的程序目录下或者指定路径中
+int main() {
+    // 创建级联分类器对象
     CascadeClassifier face_cascade;
-    if (!face_cascade.load("haarcascade_frontalface_default.xml")) {
-        printf("Error loading face cascade\n");
+
+    // 加载级联文件，确保路径是正确的
+    if (!face_cascade.load("/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml")) {
+        cerr << "Error loading face cascade file. Check the path!" << endl;
         return -1;
     }
 
-    VideoCapture capture(0); // 打开默认摄像头
+    // 打开视频捕捉设备，默认的摄像头通常是索引号0
+    VideoCapture capture(0);
     if (!capture.isOpened()) {
-        printf("Error opening video capture\n");
+        cerr << "Error opening video capture." << endl;
         return -1;
     }
 
-    Mat frame;
+    Mat frame, gray;
     while (capture.read(frame)) {
         if (frame.empty()) {
-            printf("No captured frame\n");
+            cerr << "No captured frame -- Break!" << endl;
             break;
         }
 
-        Mat frame_gray;
-        cvtColor(frame, frame_gray, COLOR_BGR2GRAY);  // 转换为灰度图，提高处理速度和识别率
-        equalizeHist(frame_gray, frame_gray);  // 均衡化处理提高图像质量
+        // 转换为灰度图，这对检测效率更高
+        cvtColor(frame, gray, COLOR_BGR2GRAY);
+        // 使用直方图均衡化改善灰度图像的对比度
+        equalizeHist(gray, gray);
 
         // 检测人脸
-        std::vector<Rect> faces;
-        face_cascade.detectMultiScale(frame_gray, faces);
+        vector<Rect> faces;
+        face_cascade.detectMultiScale(gray, faces);
 
-        for (size_t i = 0; i < faces.size(); i++) {
-            Point center(faces[i].x + faces[i].width/2, faces[i].y + faces[i].height/2);
-            ellipse(frame, center, Size(faces[i].width/2, faces[i].height/2), 0, 0, 360, Scalar(255, 0, 255), 4);
+        // 在检测到的每个人脸周围画一个红色的矩形
+        for (const auto& face : faces) {
+            rectangle(frame, face, Scalar(0, 0, 255), 2);
         }
 
         // 显示结果
         imshow("Face Detection", frame);
 
-        if (waitKey(10) == 27) { // 按 'ESC' 键退出
+        // 按 'ESC' 键退出
+        if (waitKey(10) == 27) {
             break;
         }
     }
-    capture.release(); // 释放摄像头资源
-    destroyAllWindows(); // 关闭所有 OpenCV 窗口
+
+    // 释放资源
+    capture.release();
+    destroyAllWindows();
     return 0;
 }
