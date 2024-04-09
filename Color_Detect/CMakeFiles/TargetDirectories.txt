@@ -1,0 +1,3 @@
+/home/geo/Documents/Github/OpenCV-BBJB/Color_Detect/CMakeFiles/REDcolorMOV.dir
+/home/geo/Documents/Github/OpenCV-BBJB/Color_Detect/CMakeFiles/edit_cache.dir
+/home/geo/Documents/Github/OpenCV-BBJB/Color_Detect/CMakeFiles/rebuild_cache.dir
