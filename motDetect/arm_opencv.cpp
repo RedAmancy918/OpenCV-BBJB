@@ -1,6 +1,6 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include "arm_sys.h" // 包含机械臂的头文件
+#include "arm_sys.h" 
 
 using namespace cv;
 using namespace std;
@@ -13,7 +13,11 @@ int main() {
     }
 
     Mat frame;
-    mg90s servo(17); // 假设伺服电机的GPIO pin是17
+    mg90s servo(17); //这个看怎么改
+    mg90s servo2(27); 
+    mg90s servo3(22);
+    mg90s servo4(10);
+
 
     while (capture.read(frame)) {
         if (frame.empty()) {
@@ -49,7 +53,11 @@ int main() {
         int centerX = frame.cols / 2;
         int deviation = targetX - centerX; // 计算偏差
 
-        float angle = deviation * 90.0 / centerX; // 假设屏幕宽度对应-90到90度
+        float angle = deviation * 90.0 / centerX; // 这里要改一下，我们最大的几个角度，加上电机组合。
+        float angle2 = deviation * 90.0 / centerX;
+        float angle3 = deviation * 90.0 / centerX;
+        float angle4 = deviation * 90.0 / centerX;
+        
         servo.setTargetAngleAsync(angle, []() {
             cout << "Target angle reached." << endl;
         });

@@ -6,7 +6,7 @@
 #include <pigpio.h>
 #include <cmath>
 #include <unistd.h>
-#include "KalmanFilter.h"  // 假设已有卡尔曼滤波器的实现
+#include "KalmanFilter.h"  
 
 // MPU6050 I2C地址和寄存器定义
 #define MPU6050_ADDR 0x68
@@ -53,7 +53,7 @@ void read_mpu6050_data(int pi, int handle, double &roll, double &pitch, double &
     double dt = 0.01; // 时间步长，假设有定时调用
     pitch = kalmanX.updateEstimate(atan2(ax, sqrt(ay * ay + az * az)) * 180.0 / M_PI, gy, dt);
     roll = kalmanY.updateEstimate(atan2(ay, sqrt(ax * ax + az * az)) * 180.0 / M_PI, gx, dt);
-    yaw = atan2(sqrt(ax * ax + ay * ay), az) * 180.0 / M_PI; // 这是一个近似值
+    yaw = atan2(sqrt(ax * ax + ay * ay), az) * 180.0 / M_PI; // 近似值
 
     accel[0] = ax / 16384.0 * 9.80665;
     accel[1] = ay / 16384.0 * 9.80665;
