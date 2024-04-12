@@ -1,11 +1,15 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include "arm_sys.h" // 包含机械臂的头文件
+#include "arm_sys.h" 
 
 using namespace cv;
 using namespace std;
 
 int main() {
+    auto onTargetReached = []() {
+        std::cout << "Target angle reached." << std::endl;
+    };
+
     VideoCapture capture(0);
     if (!capture.isOpened()) {
         cerr << "Error opening video capture." << endl;
@@ -13,7 +17,7 @@ int main() {
     }
 
     Mat frame;
-    mg90s servo0(17), servo1(18), servo2(19), servo3(20); // 假设电机的GPIO引脚分别为17, 18, 19, 20
+    mg90s servo0(21), servo1(20), servo2(16), servo3(26); 
 
     while (capture.read(frame)) {
         if (frame.empty()) {
@@ -52,23 +56,23 @@ int main() {
 
             // Adjust horizontal position
             if (objCenterX < frameCenterX) {
-                servo0.setTargetAngleAsync(-10); // Move right
+                servo0.setTargetAngleAsync(-10,onTargetReached); // Move right
             } else if (objCenterX > frameCenterX) {
-                servo0.setTargetAngleAsync(10); // Move left
+                servo0.setTargetAngleAsync(10,onTargetReached); // Move left
             }
 
             // Adjust vertical position and forward movement
             if (objCenterY < frameCenterY) {
-                servo1.setTargetAngleAsync(5);
-                servo2.setTargetAngleAsync(5); // Move up and forward
+                servo1.setTargetAngleAsync(5,onTargetReached);
+                servo2.setTargetAngleAsync(5,onTargetReached); // Move up and forward
             } else if (objCenterY > frameCenterY) {
-                servo1.setTargetAngleAsync(-5);
-                servo2.setTargetAngleAsync(-5); // Move down and forward
+                servo1.setTargetAngleAsync(-5,onTargetReached);
+                servo2.setTargetAngleAsync(-5,onTargetReached); // Move down and forward
             }
 
             // Check if object is well-centered and at the desired scale
             if (abs(objCenterX - frameCenterX) < 20 && abs(objCenterY - frameCenterY) < 20 && areaRatio > 0.05) {
-                servo3.setTargetAngleAsync(90); // Activate the gripping mechanism
+                servo3.setTargetAngleAsync(90,onTargetReached); // Activate the gripping mechanism
             }
         }
 

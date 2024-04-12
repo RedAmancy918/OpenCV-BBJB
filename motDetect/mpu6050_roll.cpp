@@ -1,6 +1,7 @@
 /*
 调整时间步长dt和卡尔曼滤波器的其他参数。
 根据测试调整这两个参数。
+Editor Geo
 */
 #include <iostream>
 #include <pigpio.h>
@@ -25,7 +26,7 @@ void mpu6050_reset(int pi, int handle) {
         std::cerr << "Failed to reset MPU6050" << std::endl;
         return;
     }
-    sleep(1); // 等待设备重置
+    sleep(1); 
 }
 
 void mpu6050_init(int pi, int handle) {
