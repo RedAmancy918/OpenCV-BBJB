@@ -1,38 +1,30 @@
-#include <opencv2/opencv.hpp>
 #include <iostream>
-#include "arm_sys.h" 
+#include <opencv2/opencv.hpp>
+#include "Libcam2OpenCV.h"
+#include "arm_sys.h"
 
 using namespace cv;
 using namespace std;
 
-int main() {
-    VideoCapture capture(0); // 打开默认摄像头
-    if (!capture.isOpened()) {
-        cerr << "Error opening video capture." << endl;
-        return -1;
+class MyCallback : public Libcam2OpenCV::Callback {
+public:
+    mg90s servo0, servo1, servo2, servo3;
+
+    MyCallback() : servo0(21), servo1(20), servo2(16), servo3(26) {}
+
+    virtual void hasFrame(const cv::Mat &frame, const libcamera::ControlList &metadata) override {
+        processFrame(frame);
     }
 
-    Mat frame;
-    mg90s servo(17); //这个看怎么改
-    mg90s servo2(27); 
-    mg90s servo3(22);
-    mg90s servo4(10);
-
-
-    while (capture.read(frame)) {
-        if (frame.empty()) {
-            cerr << "No captured frame -- Break!" << endl;
-            break;
-        }
-
+    void processFrame(const cv::Mat &frame) {
         Mat hsv, redMask1, redMask2, redMask;
-        cvtColor(frame, hsv, COLOR_BGR2HSV); // 转换到HSV色彩空间
+        cvtColor(frame, hsv, COLOR_BGR2HSV);
         inRange(hsv, Scalar(0, 70, 50), Scalar(10, 255, 255), redMask1);
         inRange(hsv, Scalar(170, 70, 50), Scalar(180, 255, 255), redMask2);
-        redMask = redMask1 | redMask2; // 合并两个红色范围的掩模
+        redMask = redMask1 | redMask2;
 
         Mat kernel = getStructuringElement(MORPH_ELLIPSE, Size(5, 5));
-        morphologyEx(redMask, redMask, MORPH_CLOSE, kernel); // 使用形态学操作改善掩模结果
+        morphologyEx(redMask, redMask, MORPH_CLOSE, kernel);
 
         vector<vector<Point>> contours;
         findContours(redMask, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -47,29 +39,62 @@ int main() {
             }
             objectBoundingRectangle = boundingRect(largestContour);
             rectangle(frame, objectBoundingRectangle, Scalar(0, 255, 0), 2);
+
+            handleServo(frame, objectBoundingRectangle);
         }
 
-        int targetX = objectBoundingRectangle.x + objectBoundingRectangle.width / 2; // 目标中心X坐标
-        int centerX = frame.cols / 2;
-        int deviation = targetX - centerX; // 计算偏差
-
-        float angle = deviation * 90.0 / centerX; // 这里要改一下，我们最大的几个角度，加上电机组合。
-        float angle2 = deviation * 90.0 / centerX;
-        float angle3 = deviation * 90.0 / centerX;
-        float angle4 = deviation * 90.0 / centerX;
-        
-        servo.setTargetAngleAsync(angle, []() {
-            cout << "Target angle reached." << endl;
-        });
-
-        imshow("Red Object Detection", frame); // 显示结果
-
+        imshow("Detection", frame);
         if (waitKey(10) == 27) {
-            break; // 按 'ESC' 键退出
+            cout << "Exiting..." << endl;
+            exit(0);
         }
     }
 
-    capture.release(); // 释放资源
-    destroyAllWindows();
-    return 0;
-}
+    void handleServo(const Mat& frame, const Rect& rect) {
+        int frameCenterX = frame.cols / 2;
+        int frameCenterY = frame.rows / 2;
+        int objCenterX = rect.x + rect.width / 2;
+        int objCenterY = rect.y + rect.height / 2;
+        double areaRatio = (double)rect.area() / (frame.rows * frame.cols);
+
+        auto onTargetReached = []() {
+            std::cout << "Target angle reached." << std::endl;
+        };
+
+        // Adjust horizontal position
+        if (objCenterX < frameCenterX) {
+            servo0.setTargetAngleAsync(-10, onTargetReached); // Move right
+        } else if (objCenterX > frameCenterX) {
+            servo0.setTargetAngleAsync(10, onTargetReached); // Move left
+        }
+
+        // Adjust vertical position and forward movement
+        if (objCenterY < frameCenterY) {
+            servo1.setTargetAngleAsync(5, onTargetReached);
+            servo2.setTargetAngleAsync(5, onTargetReached); // Move up and forward
+        } else if (objCenterY > frameCenterY) {
+            servo1.setTargetAngleAsync(-5, onTargetReached);
+            servo2.setTargetAngleAsync(-5, onTargetReached); // Move down and forward
+        }
+
+        // Check if object is well-centered and at the desired scale
+        if (abs(objCenterX - frameCenterX) < 20 && abs(objCenterY - frameCenterY) < 20 && areaRatio > 0.05) {
+            servo3.setTargetAngleAsync(90, onTargetReached); // Activate the gripping mechanism
+        }
+    }
+};
+
+int main() {
+    Libcam2OpenCV cameraInterface;
+    MyCallback frameProcessor;
+
+    cameraInterface.registerCallback(&frameProcessor);
+
+    Libcam2OpenCVSettings settings;
+    settings.width = 640;  // Set desired width
+    settings.height = 480;  // Set desired height
+    settings.framerate = 30;  // Set desired framerate
+
+    try {
+        cameraInterface.start(settings);
+        std::this_thread
