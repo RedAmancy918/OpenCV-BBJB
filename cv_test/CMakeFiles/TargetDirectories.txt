@@ -1,3 +1,0 @@
-/home/geo/cv_test/CMakeFiles/DisplayImage.dir
-/home/geo/cv_test/CMakeFiles/edit_cache.dir
-/home/geo/cv_test/CMakeFiles/rebuild_cache.dir
