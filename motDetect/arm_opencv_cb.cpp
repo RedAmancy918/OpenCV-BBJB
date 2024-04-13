@@ -5,7 +5,10 @@ version 1.2
 Using Prof libcam2opencv.h rewrite cpp fail
 version 1.3
 add callback function MK" servo2 control the up and down 
-version 1.4 searching prograss need a loop control and callback function
+version 1.4 
+searching prograss need a loop control and callback function
+version 1.5
+All function 
 */
 #include <iostream>
 #include <opencv2/opencv.hpp>
@@ -21,10 +24,20 @@ public:
     bool redDetected = false;  // Flag to check if red object is detected
 
     MyCallback() : servo0(21), servo1(16), servo2(20), servo3(26) {
-        // SLE Initialization: Move servo0 left by 90 degrees and then right by 180 degrees
-        servo0.setTargetAngleAsync(-90, [this]() {
-            servo0.setTargetAngleAsync(90, nullptr);  
-        });
+        initiateSLE(); // Start the SLE program
+    }
+
+    void initiateSLE() {
+        // Start the SLE program: servo0 turns left 90, right 180, left 180 degrees
+        if (!redDetected) {
+            servo0.setTargetAngleAsync(-90, [this]() {
+                servo0.setTargetAngleAsync(90, [this]() {
+                    servo0.setTargetAngleAsync(-90, [this]() {
+                        initiateSLE(); // Continue the SLE loop recursively
+                    });
+                });
+            });
+        }
     }
 
     virtual void hasFrame(const cv::Mat &frame, const libcamera::ControlList &metadata) override {
@@ -43,7 +56,7 @@ public:
 
         Mat redMask = redMask1 | redMask2;
         if (countNonZero(redMask) > 0) {
-            redDetected = true; // Red object detected, switch to ALE program
+            redDetected = true; // Red object detected, stop SLE and switch to ALE program
         }
     }
 
@@ -85,19 +98,20 @@ public:
         int objCenterY = rect.y + rect.height / 2;
         double areaRatio = (double)rect.area() / (frame.rows * frame.cols);
 
-        // ALE conditions: object centering
+        // ALE (Aligning and Leveling Entity): Ensure object is centered
         checkAndAdjustCentering(objCenterX, frameCenterX, objCenterY, frameCenterY);
 
-        // BLE condition: object scaling
+        // BLE (Bounding and Leveling Entity): Adjust based on object size
         if (areaRatio < 0.75) {
             adjustForScale(objCenterX, frameCenterX, objCenterY, frameCenterY);
         } else {
-            // CLE condition: finalize and reset
+            // CLE (Clamping and Leveling Entity): Final adjustments
             performFinalAdjustments();
         }
     }
 
     void checkAndAdjustCentering(int objCenterX, int frameCenterX, int objCenterY, int frameCenterY) {
+        // Adjust servos to center the detected object within the frame
         if (abs(objCenterX - frameCenterX) > 20) {
             if (objCenterX < frameCenterX) {
                 servo0.setTargetAngleAsync(-10, []() { cout << "Adjusting left." << endl; });
@@ -116,12 +130,13 @@ public:
     }
 
     void adjustForScale(int objCenterX, int frameCenterX, int objCenterY, int frameCenterY) {
-        // Move forward
+        // Move forward to adjust the scale of the object in the frame
         servo2.setTargetAngleAsync(10, []() { cout << "Moving forward." << endl; });
         checkAndAdjustCentering(objCenterX, frameCenterX, objCenterY, frameCenterY);
     }
 
     void performFinalAdjustments() {
+        // Perform final gripping actions and reset the servo positions
         servo3.setTargetAngleAsync(90, []() { cout << "Gripping." << endl; });
         servo0.setTargetAngleAsync(90, []() { cout << "Centering." << endl; });  // Return to center position
         servo3.setTargetAngleAsync(-90, []() { cout << "Releasing grip." << endl; });
@@ -142,10 +157,8 @@ int main() {
 
     try {
         cameraInterface.start(settings);
-        // Program runs indefinitely until user interrupts
-        while (true) {
-            this_thread::sleep_for(chrono::milliseconds(10));
-        }
+        cout << "Press enter to exit..." << endl;
+        cin.get();  // Wait for user input to exit
         cameraInterface.stop();
     } catch (const std::exception& e) {
         cerr << "Exception caught during camera operation: " << e.what() << endl;
