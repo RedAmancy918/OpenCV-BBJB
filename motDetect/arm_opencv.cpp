@@ -97,4 +97,12 @@ int main() {
 
     try {
         cameraInterface.start(settings);
-        std::this_thread
+        std::this_thread::sleep_for(std::chrono::seconds(10));  // Run for a limited time or handle with a different way
+        cameraInterface.stop();
+    } catch (const std::exception& e) {
+        cerr << "Exception caught during camera operation: " << e.what() << endl;
+        return -1;
+    }
+
+    return 0;
+}
