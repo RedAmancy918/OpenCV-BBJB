@@ -1,6 +1,12 @@
+/*
+version 1.1  Author: Geo
+Using libcamera to connect OpenCV. Fail
+version 1.2  
+Using Prof libcam2opencv.h rewrite cpp fail
+*/
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include "Libcam2OpenCV.h"
+#include "libcam2opencv.h"
 #include "arm_sys.h"
 
 using namespace cv;
