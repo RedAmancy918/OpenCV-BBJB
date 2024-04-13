@@ -5,6 +5,7 @@ version 1.2
 Using Prof libcam2opencv.h rewrite cpp fail
 version 1.3
 add callback function MK" servo2 control the up and down 
+version 1.4 searching prograss need a loop control and callback function
 */
 #include <iostream>
 #include <opencv2/opencv.hpp>
