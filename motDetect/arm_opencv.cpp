@@ -3,6 +3,8 @@ version 1.1  Author: Geo
 Using libcamera to connect OpenCV. Fail
 version 1.2  
 Using Prof libcam2opencv.h rewrite cpp fail
+version 1.3
+add callback function
 */
 #include <iostream>
 #include <opencv2/opencv.hpp>
@@ -16,7 +18,7 @@ class MyCallback : public Libcam2OpenCV::Callback {
 public:
     mg90s servo0, servo1, servo2, servo3;
 
-    MyCallback() : servo0(21), servo1(20), servo2(16), servo3(26) {}
+    MyCallback() : servo0(21), servo1(16), servo2(20), servo3(26) {}
 
     virtual void hasFrame(const cv::Mat &frame, const libcamera::ControlList &metadata) override {
         processFrame(frame);
